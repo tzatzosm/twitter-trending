@@ -1,0 +1,7 @@
+elasticsearch==5.0.1
+future==0.16.0
+oauthlib==2.0.1
+python-twitter==3.2
+requests==2.12.4
+requests-oauthlib==0.7.0
+urllib3==1.19.1
