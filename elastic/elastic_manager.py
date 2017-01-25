@@ -46,11 +46,9 @@ class ElasticManager():
         doc = self.es.get(index=self.index_name, doc_type=doc_type, id=doc_id)
         if doc['found']:
             return doc['_source']
-        else:
-            return None
+        return None
 
-
-    def index_doc(self, doc_type, doc_payload, doc_id=None, parent_id=None):
+    def index_doc(self, doc_type, doc_payload, doc_id=None):
         """ Index (create or update) a document in the index specified during initialization.
 
             :arg doc_type:      type of the document to index
@@ -59,14 +57,13 @@ class ElasticManager():
             :arg parent_id:     parent document id (default=None)
             :return:            json result of the action as returned by the es python library
         """
-        return self.es.create(
+        return self.es.index(
             index=self.index_name,
             doc_type=doc_type,
             body=doc_payload,
-            parent=parent_id,
             id=doc_id)
 
-    def delete_doc(self, doc_type, doc_id, parent_id=None):
+    def delete_doc(self, doc_type, doc_id):
         """ Delete (create or update) a document in the index specified during initialization.
 
             :arg doc_type:      type of the document to index
@@ -77,5 +74,31 @@ class ElasticManager():
         return self.es.delete(
             index=self.index_name,
             doc_type=doc_type,
-            id=doc_id,
-            parent=parent_id)
+            id=doc_id)
+
+
+    def upsert_props(self, doc_type, doc_id, props):
+        """ Insert or update properties for the a document.
+
+            :arg doc_type:      type of the document
+            :arg doc_id:        document id
+            :arg props:         dictionary with the additional properties that will be either inserted or updated
+            :return:            json result of the index action as return by the es python library
+        """
+        doc = self.get_doc(doc_type=doc_type, doc_id=doc_id)
+        doc.update(props)
+        self.index_doc(doc_type=doc_type, doc_payload=doc, doc_id=doc_id)
+
+    def remove_props(self, doc_type, doc_id, props):
+        """ Delete properties for the a document.
+
+            :arg doc_type:      type of the document
+            :arg doc_id:        document id
+            :arg props:         list with the properties that will be removed from the object
+            :return:            json result of the index action as return by the es python library
+        """
+        doc = self.get_doc(doc_type=doc_type, doc_id=doc_id)
+        for key in props:
+            if key in doc:
+                del doc[key]
+        self.index_doc(doc_type=doc_type, doc_payload=doc, doc_id=doc_id)
