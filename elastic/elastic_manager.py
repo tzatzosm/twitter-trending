@@ -19,8 +19,7 @@ class ElasticManager():
 
 
     def __init_es__(self, host, port):
-        """
-            Initializes the connection to the elastic search instance.
+        """ Initializes the connection to the elastic search instance.
 
             :arg host: hostname of the node
             :arg port: port of the node
@@ -35,6 +34,20 @@ class ElasticManager():
         """ Returns the host string wrapped in a python array
             as required by es python constructor. """
         return ["{0}:{1}".format(host, port)]
+
+    def get_doc(self, doc_type, doc_id, default=None):
+        """ Returns a document (inside the index specified during initialization) by its id,
+            if exists one or default.
+
+            :arg doc_type:		type of the document
+            :arg doc_id:        document id
+            :return:            document found.
+		"""
+        doc = self.es.get(index=self.index_name, doc_type=doc_type, id=doc_id)
+        if doc['found']:
+            return doc['_source']
+        else:
+            return None
 
 
     def index_doc(self, doc_type, doc_payload, doc_id=None, parent_id=None):
