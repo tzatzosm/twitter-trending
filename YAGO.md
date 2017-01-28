@@ -2,7 +2,7 @@
 
 ## TAXONOMY
 
-### 1. yagoTaxonomy
+### yagoTaxonomy
 
 The entire YAGO taxonomy. These are all rdfs:subClassOf facts derived from multilingual Wikipedia and from WordNet
 
@@ -10,7 +10,7 @@ Sample Triples
 
     <wordnet_agape_101028534>	rdfs:subClassOf <wordnet_religious_ceremony_101028082>
 
-### 2. yagoTypes
+### yagoTypes
 
 The coherent types extracted from different wikipedias
 
@@ -19,7 +19,7 @@ Sample triples
     <Kayna>	rdf:type	<wikicat_Former_municipalities_in_Saxony-Anhalt> .
     <Kayna>	rdf:type	<wikicat_Towns_in_Saxony-Anhalt> .
 
-### 3. yagoSchema
+### yagoSchema
 
 The domains, ranges and confidence values of YAGO relations
 
@@ -32,7 +32,7 @@ The following predicates are used
     - (yago:) hasConfidence - 
     - (yago:) hasGloss - 
 
-### 4. yagoTransitiveType
+### yagoTransitiveType
 
 Transitive closure of all rdf:type/rdfs:subClassOf facts
 
@@ -44,7 +44,7 @@ Sample triples
     
 ## CORE
     
-### 5. yagoFacts
+### yagoFacts
 
 All facts of YAGO that hold between instances (resources)
 
@@ -56,7 +56,7 @@ Sample triples
 
 In this samples both subject (left) and object (right) are yago resources.
 
-### 6. yagoLiteralFacts
+### yagoLiteralFacts
 
 All facts of YAGO that contain literals (except labels)
 
@@ -65,7 +65,7 @@ Sample triples
     <Gosław,_Opole_Voivodeship>	<hasLongitude>	"18.279722222222222"^^<degrees> .
     <Morgan_County,_Colorado>	<hasLongitude>	"-103.81"^^<degrees> .
     
-### 7. yagoLabels
+### yagoLabels
 
 All facts of YAGO that contain labels (rdfs:label, skos:prefLabel, isPreferredMeaningOf, hasGivenName, hasFamilyName, 
 hasGloss, redirectedFrom)
@@ -76,7 +76,7 @@ Sample triples
     <Rouffignac>	rdfs:label	"Rouffignac"@slk .
     <es/Alejandro_Fiore>	rdfs:label	"Alejandro Fiore"@es .
 
-### 8. yagoDateFacts
+### yagoDateFacts
 
 All facts of YAGO that contain dates
 
