@@ -14,6 +14,7 @@
 <Saatly_Rayon>	<hasNumberOfPeople>	"95100"^^xsd:integer .
 #@ <id_2s82cl_l7i_zjgz3y>
 <Mullur>	<hasNumberOfPeople>	"2000"^^xsd:integer .
+<The_World's_Work>	<hasNumberOfPeople>	"2000"^^xsd:integer .
 #@ <id_9kq6qp_1n8_veq9wp>
 <Jataizinho>	<hasLatitude>	"-23.2539"^^<degrees> .
 #@ <id_702tj3_1n8_t191m9>

@@ -50,6 +50,9 @@ class MomaIndexer:
                 doc_id=artwork_id)
         print("Artworks Indexing finished")
 
-moma_indexer = MomaIndexer()
-moma_indexer.index_artists()
-moma_indexer.index_artworks()
+# moma_indexer = MomaIndexer()
+
+# moma_indexer.index_artists()
+# moma_indexer.index_artworks()
+
+elastic_manager = ElasticManager("moma")

@@ -4,29 +4,31 @@ import rdflib
 from pprint import pprint
 
 from rdflib import RDFS
+from rdflib.plugins.sparql import prepareQuery
+from rdflib.namespace import OWL
 
 from elastic.elastic_manager import ElasticManager
 
+
+
 class YagoIndexer:
 
-    yago_types_file_path = 'yago/taxonomy/yagoTypes{0}.ttl'
-    yago_taxonomy_file_path = 'yago/taxonomy/yagoTaxonomy{0}.ttl'
-    yago_schema_file_path = 'yago/taxonomy/yagoSchema{0}.ttl'
+    ns_yago = "http://yago-knowledge.org/resource/"
 
-    def __init__(self):
+    def __init__(self, files):
+        self.files = files
         self.em = ElasticManager('yago')
         self.__init_graph__()
 
     def __init_graph__(self):
-        self.graph = rdflib.Graph()
+        self.graph = rdflib.ConjunctiveGraph()
         # yago taxonomy rdf model
 
         self.__load_graph_data__()
-        self.__index_taxonomy__()
-        print(len(self.graph))
+        # self.__index_by_types__(['wordnet_site_108651247'])
 
 
-    def __load_graph_data__(self, sample=True):
+    def __load_graph_data__(self):
         """
         Initializes the graph and loads the data. This function
         will take too much time if run for the original files.
@@ -35,65 +37,158 @@ class YagoIndexer:
         """
         start_time = time.time()
         print("Loading data into graph")
-        self.__load_file__(self.yago_types_file_path, sample)
-        self.__load_file__(self.yago_taxonomy_file_path, sample)
-        self.__load_file__(self.yago_schema_file_path, sample)
+        for file in self.files:
+            self.__load_file__(file)
         print("Loading data into graph finished after {0}".format((time.time() - start_time)))
 
 
-    def __load_file__(self, file_path, sample):
+    def __load_file__(self, file_path):
         """
 
         :param file_path:       Path to the file that will be loaded into the graph.
         :param sample:          If true the sample file will be loaded.
         """
-        print("Loading {0}, sample : {1}".format(file_path, sample))
-        start_time = time.time()
-        suffix = 'Sample' if sample else ''
-        self.graph.load(file_path.format(suffix), format='n3')
-        print("Loading {0}, sample : {1} finished after {2} seconds"
-              .format(file_path, sample, time.time() - start_time))
+        try:
+            print("Loading {0}".format(file_path))
+            start_time = time.time()
+            self.graph.load(file_path, format='n3')
+            print("Loading {0}, finished after {1} seconds"
+                  .format(file_path, time.time() - start_time))
+        except FileNotFoundError:
+            from warnings import warn
+            warn("File {0} not found.".format(file_path))
 
+    def __index_by_types__(self, types):
+        # query = self.__get_filter_by_type_query__(types)
+        # print("running {0}".format(query))
+        # res = self.graph.query(query)
+        # print("Result Length is {0}".format(len(res)))
+        # for row in res:
+        #     print(row)
+        pass
 
-    def __index_taxonomy__(self):
+    def __get_preferred_meaning__(self, type, lang="eng"):
         """
-            Indexes all subjects defined in yago taxonomy file.
-            The object read will be save at key subClassOf as an object
-            with its uri and a friendly name and its id (parsed from the uri as defined in yago) .
+        Returns preferred meaning for given type if any or None.
+
+        :param type:    (rdflib.URIRef) Type
+        :return:        preferred meanings separated by , or None.
         """
-        self.data = {}
-        for (subject, _, object) in self.graph.triples((None, RDFS.subClassOf, None)):
-            # instantiate a new dictionary representing our subject
-            subject_uri_string = str(subject)
-            subject_dict = self.data.setdefault(subject_uri_string, {})
-            subject_dict.setdefault('uri', subject_uri_string)
-            # extract name from the subject's uri and set it as the name property of our subclass
-            full_name = self.get_last_segment(subject_uri_string)
-            subject_dict.setdefault('full_name', full_name)
-            # extract category, name and id from the full_name
-            # and add them as subject's properties
-            name_info = self.get_source_name_id(full_name)
-            subject_dict.setdefault('category', name_info[0])
-            subject_dict.setdefault('name', name_info[1])
-            subject_dict.setdefault('id', name_info[2])
+        query = prepareQuery(
+            """
+                SELECT  (group_concat(?prefMeaning;separator=", ") as ?preferredMeanings)
+                WHERE {{
+                    ?type yago:isPreferredMeaningOf ?prefMeaning .
+                    FILTER( LANG(?prefMeaning) = "" || LANGMATCHES(LANG(?prefMeaning), "{0}"))
+                }}
+            """.format(lang),
+            initNs= { 'yago' : self.ns_yago }
+        )
+        res = self.graph.query(query, initBindings={'type': type})
+        if len(res) > 0:
+            return list(res)[0]
+        return None
 
-            # define a property named subclass subClassOf for our subject
-            subclass = subject_dict.setdefault('_subClassOf', {})
-            object_uri_string = str(object)
-            subclass.setdefault('uri', object_uri_string)
-            # extract name from object's uri and set it as the name property of our subclass
-            subclass_name = self.get_last_segment(object_uri_string)
-            subclass.setdefault('full_name', subclass_name)
-            # extract category, name and id from the full_name
-            # and add them as subject's properties
-            subclass_name_info = self.get_source_name_id(subclass_name)
-            subclass.setdefault('category', subclass_name_info[0])
-            subclass.setdefault('name', subclass_name_info[1])
-            subclass.setdefault('id', subclass_name_info[2])
+    def __get_db_pedia_links__(self, type):
+        """
+        Queries and returns a list of all subjects of the current type and their dbpedia links.
 
-            self.em.index_doc('yago', subject_dict)
+        :param type:    (rdflib.URIRef) Type
+        :return:        List of (subject, dbPediaLink) tuples or None.
+        """
+        query = prepareQuery(
+            """
+                SELECT ?subj ?dbPediaLink
+                WHERE {
+                    ?subj a ?type .
+                    ?subj owl:sameAs ?dbPediaLink .
+                }
+            """,
+            initNs={
+                'yago' : self.ns_yago,
+                'owl' : OWL
+            }
+        )
+        res = self.graph.query(query, initBindings={'type': type})
+        if len(res) > 0:
+            return list(res)
+        return None
 
-        # pprint(self.data)
+    def __get_db_pedia_info__(self, dbpedia_resource, lang="en"):
+        """
+        DBPedia uses @en for english literals. Inconsistencies everywhere...
+
+        :param dbpedia_resource:
+        :param lang:
+        :return:
+        """
+        try:
+            dbpedia_uri = self.__get_db_pedia_uri__(dbpedia_resource)
+            self.graph.load(dbpedia_uri, format='n3')
+            query = prepareQuery(
+                """
+                    SELECT ?label ?comment
+                    WHERE {{
+                        ?subj rdfs:label ?label .
+                        ?subj rdfs:comment ?comment .
+                        FILTER( LANGMATCHES(LANG(?label), "{0}") && LANGMATCHES(LANG(?comment), "{0}"))
+                    }}
+                """.format(lang),
+                initNs= {
+                    'rdfs' : RDFS
+                }
+            )
+            res = self.graph.query(query, initBindings={ 'subj': dbpedia_resource })
+            if len(res) > 0:
+                return list(res)[0]
+        except UnicodeEncodeError:
+            pass
+        return None
+
+    def __get_db_pedia_uri__(self, dbpedia_resource):
+        """
+        Returns a dbpedia uri that containing the data of the resource defined.
+
+        :param db_pedia_uri_ref:
+        :param format:
+        :return:
+        """
+        return "{0}.n3".format(str(dbpedia_resource).replace('/resource/', '/data/'))
+
+    def __index_type__(self, type):
+        pref_meaning = self.__get_preferred_meaning__(type)
+        dp_pedia_links = self.__get_db_pedia_links__(type)
+        for (index, (yago_resource, db_pedia_resource)) in enumerate(dp_pedia_links):
+            db_pedia_info = self.__get_db_pedia_info__(db_pedia_resource, 'en')
+            if db_pedia_info:
+                # print("DBPedia info @ {0} -> {1}, {2}".format(
+                #     index, str(db_pedia_info[0]), str(db_pedia_info[1])))
+                indexable = self.__get
+
+            else:
+                # print("DBPedia info @ {0} -> None".format(index))
+                # TODO log error
+                pass
+
+    def __get_object_dict__(self, label, comment):
+        """
+        Returns a new object that can be indexed from elastic search
+
+        :param type:
+        :param label:
+        :param comment:
+        :return:
+        """
+        return {
+            "label": label,
+            "comment": comment
+        }
+
+    def __get_dbpedia_n3_data_uri(self, db_pedia_uri_ref, format='n3'):
+
+        return "{0}.n3".format(str(db_pedia_uri_ref))\
+            .replace("http://dbpedia.org/resource/","http://dbpedia.org/data/")
+
 
     def get_source_name_id(self, full_name):
         result = (None, None, None)
@@ -163,4 +258,8 @@ class YagoIndexer:
 
 
 if __name__ == "__main__":
-    yi = YagoIndexer()
+    yi = YagoIndexer(files=[
+        'yago_samples/yagoTypesSites.ttl',
+        'yago_samples/yagoLabelsSites.ttl',
+        'yago_samples/yagoPreferredMeaningsSites.ttl',
+        'yago_samples/yagoDBpediaInstancesSites.ttl'])

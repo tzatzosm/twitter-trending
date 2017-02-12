@@ -9,3 +9,4 @@
 <wordnet_site_108651247>	<isPreferredMeaningOf>	"place"@eng .
 <wordnet_site_108651247>	<isPreferredMeaningOf>	"site"@eng .
 <wordnet_site_108651247>	<isPreferredMeaningOf>	"land site"@eng .
+<wordnet_site_108651247>	<isPreferredMeaningOf>	"land site fr"@fr .

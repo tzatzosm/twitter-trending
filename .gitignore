@@ -63,3 +63,4 @@ ENV/
 
 # removing data directory due to its size
 data/
+yago/
