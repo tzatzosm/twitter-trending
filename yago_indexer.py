@@ -58,15 +58,6 @@ class YagoIndexer:
             from warnings import warn
             warn("File {0} not found.".format(file_path))
 
-    def __index_by_types__(self, types):
-        # query = self.__get_filter_by_type_query__(types)
-        # print("running {0}".format(query))
-        # res = self.graph.query(query)
-        # print("Result Length is {0}".format(len(res)))
-        # for row in res:
-        #     print(row)
-        pass
-
     def __get_preferred_meaning__(self, type, lang="eng"):
         """
         Returns preferred meaning for given type if any or None.
@@ -184,51 +175,6 @@ class YagoIndexer:
             "comment": comment
         }
 
-    def __get_dbpedia_n3_data_uri(self, db_pedia_uri_ref, format='n3'):
-
-        return "{0}.n3".format(str(db_pedia_uri_ref))\
-            .replace("http://dbpedia.org/resource/","http://dbpedia.org/data/")
-
-
-    def get_source_name_id(self, full_name):
-        result = (None, None, None)
-        tokens = full_name.split('_')
-        # Category is set here
-        category = tokens[0]
-
-        # TODO cleanup a bit this code...
-
-        # Name ranges from seconds argument to the last-1
-        if len(tokens) > 1:
-            # if tokens[2] isdigit (meaning is numbers only)
-            # we asume it is the id and we join the name till
-            # last - 1 (reduce by holds that value)
-            reduce_by = 1 if (len(tokens) > 2 and tokens[-1].isdigit()) else 0
-            name = "_".join(tokens[1:(len(tokens)-reduce_by)])
-        else:
-            name = None
-
-        if len(tokens) > 2:
-            identifier = tokens[-1]
-        else:
-            identifier = None
-
-        return (category, name, identifier)
-
-
-    def __init_dict__(self):
-        self.dict = {}
-        for (subject, predicate, obj) in self.graph:
-            subject_id = self.get_last_segment(subject)
-            data = self.dict.setdefault(subject_id, {})
-            data.setdefault('name', self.normalize(subject))
-            data.setdefault(self.normalize(predicate), self.normalize(obj))
-
-
-    def save_dict(self):
-        with open('data.json', 'w') as fp:
-            json.dump(self.dict, fp)
-
 
     def print_stats(self):
         subjects = list(self.graph.subjects())
@@ -239,7 +185,6 @@ class YagoIndexer:
             print(subject)
             for triple in self.graph.triples((subject,None,None)):
                 print("\t{0}".format(triple))
-
 
     def print_all(self):
         for (sub, pred, obj) in self.graph:
