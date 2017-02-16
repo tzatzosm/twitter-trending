@@ -9,7 +9,7 @@ from rdflib.namespace import OWL
 
 from elastic.elastic_manager import ElasticManager
 
-
+from slugify import slugify
 
 class YagoIndexer:
 
@@ -148,14 +148,17 @@ class YagoIndexer:
 
     def __index_type__(self, type):
         pref_meaning = self.__get_preferred_meaning__(type)
+        doc_type = self.get_last_segment(type)
         dp_pedia_links = self.__get_db_pedia_links__(type)
+        db_pedia_links_length = len(dp_pedia_links)
         for (index, (yago_resource, db_pedia_resource)) in enumerate(dp_pedia_links):
             db_pedia_info = self.__get_db_pedia_info__(db_pedia_resource, 'en')
             if db_pedia_info:
-                # print("DBPedia info @ {0} -> {1}, {2}".format(
-                #     index, str(db_pedia_info[0]), str(db_pedia_info[1])))
-                indexable = self.__get
-
+                print("Indexing @ {0}/{1} -> {2}, {3}".format(
+                    index, db_pedia_links_length, str(db_pedia_info[0]), str(db_pedia_info[1])))
+                doc_payload = self.__get_object_dict__(db_pedia_info[0], db_pedia_info[1])
+                doc_id = self.__get_object_id__(db_pedia_info[0])
+                self.em.index_doc(doc_type, doc_payload=doc_payload, doc_id=doc_id)
             else:
                 # print("DBPedia info @ {0} -> None".format(index))
                 # TODO log error
@@ -165,15 +168,17 @@ class YagoIndexer:
         """
         Returns a new object that can be indexed from elastic search
 
-        :param type:
-        :param label:
-        :param comment:
+        :param label:       (rdflib.Literal)
+        :param comment:     (rdflib.Literal)
         :return:
         """
         return {
-            "label": label,
-            "comment": comment
+            "label": str(label),
+            "comment": str(comment)
         }
+
+    def __get_object_id__(self, label):
+        return slugify(str(label))
 
 
     def print_stats(self):

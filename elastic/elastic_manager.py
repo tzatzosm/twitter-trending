@@ -17,7 +17,7 @@ class ElasticManager():
         self.index_name = index_name
         self.__init_es__(host, port);
 
-
+    # TODO make the term vector part more generic
     def __init_es__(self, host, port):
         """ Initializes the connection to the elastic search instance.
 
@@ -27,8 +27,9 @@ class ElasticManager():
         self.es = Elasticsearch(hosts=self.get_hosts(host, port))
         # create an index with the given name.
         # ignore 400 caused by IndexAlreadyExistsException when creating an index
-        self.es.indices.create(index=self.index_name, ignore=400)
-
+        self.es.indices.create(
+            index=self.index_name,
+            ignore=400)
 
     def get_hosts(self, host, port):
         """ Returns the host string wrapped in a python array
