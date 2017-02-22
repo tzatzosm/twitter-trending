@@ -8,6 +8,8 @@
       <w>rdflib</w>
       <w>rdfs</w>
       <w>subclasss</w>
+      <w>tfidf</w>
+      <w>vectorizer</w>
       <w>yago</w>
     </words>
   </dictionary>
