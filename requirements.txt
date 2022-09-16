@@ -3,7 +3,7 @@ appdirs==1.4.0
 elasticsearch==5.0.1
 future==0.16.0
 isodate==0.5.4
-Mako==1.0.6
+Mako==1.2.2
 MarkupSafe==0.23
 nltk==3.2.2
 oauthlib==2.0.1
